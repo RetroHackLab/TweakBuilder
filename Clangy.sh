@@ -16,7 +16,7 @@ echo "        _-________-_                             "
 echo "=================================================================="
 echo ""
 
-# 1. Vérification et extraction de la configuration du workspace
+
 if [ ! -d "Package" ] || [ ! -f "Package/DEBIAN/control" ]; then
     echo "❌ Error: 'Package/DEBIAN/control' tree structure not found!"
     echo "👉 Please run 'build.sh' first to initialize project parameters."
@@ -31,7 +31,7 @@ if [[ -z "$PROJ_NAME" || -z "$ARCH_TAG" ]]; then
     exit 1
 fi
 
-# Correspondance des architectures et des cibles minimales iOS
+
 if [ "$ARCH_TAG" == "iphoneos-arm" ]; then
     CLANG_ARCH="armv7"
     MIN_IOS="-miphoneos-version-min=5.0"
@@ -40,7 +40,7 @@ else
     MIN_IOS="-miphoneos-version-min=7.0"
 fi
 
-# 2. Liaison automatique du SDK iOS
+
 AVAILABLE_SDKS=($(ls ./sdk 2>/dev/null))
 if [ ${#AVAILABLE_SDKS[@]} -eq 0 ]; then
     echo "❌ Error: No SDK structures discovered inside './sdk/' execution folder!"
@@ -53,13 +53,13 @@ echo "    ✅ Target Architecture Base: $CLANG_ARCH"
 echo ""
 
 # ------------------------------------------------------------------------------
-# PHASE 2: COMPILATION DU TWEAK SYSTÈME (*TweakName*.mm)
+#
 # ------------------------------------------------------------------------------
 echo "[-] STEP 2: Compiling Dynamic Substrate Library Layer..."
 TARGET_DYLIB="Package/Library/MobileSubstrate/DynamicLibraries/${PROJ_NAME}.dylib"
 TWEAK_SRC="${PROJ_NAME}.mm"
 
-# Auto-génération du fichier source spécifique si absent
+
 if [ ! -f "$TWEAK_SRC" ]; then
     echo "    ⚠️ Source file '$TWEAK_SRC' not found. Creating standard RetroHackLab template..."
     cat <<EOF > "$TWEAK_SRC"
@@ -72,7 +72,6 @@ if [ ! -f "$TWEAK_SRC" ]; then
 EOF
 fi
 
-# Lancement de Clang++ pour compiler la dylib du Tweak
 clang++ -dynamiclib \
     -isysroot "$SDK_PATH" \
     -arch "$CLANG_ARCH" \
@@ -100,10 +99,9 @@ if [ -d "$BUNDLE_DIR" ]; then
     TARGET_BIN="$BUNDLE_DIR/${PROJ_NAME}"
     PREFS_SRC="${PROJ_NAME}Controller.mm"
     
-    # Élimination de la notice d'avertissement temporaire de build.sh
     rm -f "$TARGET_BIN"
 
-    # Auto-génération du contrôleur d'interface spécifique si absent
+    
     if [ ! -f "$PREFS_SRC" ]; then
         echo "    ⚠️ Source file '$PREFS_SRC' not found. Crafting controller class template..."
         cat <<EOF > "$PREFS_SRC"
@@ -123,7 +121,6 @@ if [ -d "$BUNDLE_DIR" ]; then
 EOF
     fi
 
-    # Lancement de Clang++ pour générer le binaire exécutable final sans extension
     clang++ -dynamiclib \
         -isysroot "$SDK_PATH" \
         -arch "$CLANG_ARCH" \
@@ -145,6 +142,6 @@ fi
 
 echo ""
 echo "=================================================================="
-echo "🎉 COMPILATION PIPELINE COMPLETE!"
+echo "🎉 COMPLICATION PIPELINE COMPLETE!"
 echo "👉 Run './DEBIAN.sh' to pack your standardized .deb distribution file."
 echo "=================================================================="
