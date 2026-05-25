@@ -26,25 +26,25 @@ The workspace relies on 5 specialized modules:
 
 ## 🚀 How to Use (Step-by-Step)
 
-### 1️⃣ Step 1: Initialize the SDK Toolchain
+## 1️⃣ Step 1: Initialize the SDK Toolchain
 First, download and extract the required iOS SDK components:
 ```bash
 chmod +x SDK_INSTALL.sh
 ./SDK_INSTALL.sh
 
-### 2️⃣ Step 2: Lock Permissions & Deploy Core Files
+## 2️⃣ Step 2: Lock Permissions & Deploy Core Files
 Run the mandatory permission mapping script to secure the SDK directory and inject required development payloads:
 ```bash
 chmod +x RUN_Permissions.sh
 ./RUN_Permissions.sh
 
-### 3️⃣ Step 3: Configure Project Architecture
+## 3️⃣ Step 3: Configure Project Architecture
 Launch the builder to set up your project name, package identity, architecture types, and automatically compile your build structures:
 ```bash
 chmod +x build.sh
 ./build.sh
 
-### 4️⃣ Step 4: Compile and Package Your Tweak
+## 4️⃣ Step 4: Compile and Package Your Tweak
 Once build.sh has successfully written your workspace parameters, you can use the automated Makefile instructions:
 To clean, compile, stage, and package your tweak:
 ```bash
