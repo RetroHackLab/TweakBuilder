@@ -373,7 +373,7 @@ Architecture: $arch_tag
 Description: Architecture-optimized $tweak_type built by TweakBuilder.
 Section: Tweaks
 Depends: $dependencies
-Author: RetroHackLab
+Author: Git Repo's Developper
 EOF
 
 # ------------------------------------------------------------------------------
