@@ -43,7 +43,7 @@ read -p "    👉 Select Version Type [1-2]: " ver_choice
 
 case $ver_choice in
     1)
-        echo "    📝 Requis: Between 0.9.0 and 1.0-BETA"
+        echo "    📝 Required: Between 0.9.0 and 1.0-BETA"
         read -p "    👉 Enter Pre-Release Version: " version
         if [[ ! "$version" =~ ^(0\.9\.[0-9]+(-[a-zA-Z0-9]+)?|1\.0-BETA)$ ]]; then
             echo "❌ Wrong Answer: Version '$version' is out of range! [Unsupported]"
@@ -51,7 +51,7 @@ case $ver_choice in
         fi
         ;;
     2)
-        echo "    📝 Requis: Between 0.9.5 and 3.2.2"
+        echo "    📝 Required: Between 0.9.5 and 3.2.2"
         read -p "    👉 Enter Latest Version: " version
         if [[ ! "$version" =~ ^([0-3]\.[0-9]+\.[0-9]+)$ ]]; then
             echo "❌ Wrong Answer: String is not a proper semantic version. [Invalid]"
@@ -74,24 +74,27 @@ echo ""
 # STEP 3: CHOOSE TWEAK TYPE & ENVIRONMENT LOGIC
 # ------------------------------------------------------------------------------
 echo "[-] STEP 3: Tweak Environment Specification"
-echo "    1) Native Tweak"
-echo "    2) Native Tweak (Prefs)"
-echo "    3) Utility Tweak (contains *app)"
-echo "    4) System Tweak (contains *app, preferences, or system accessory)"
+echo "    1) 100% Native Tweak (Hidden Pack / Scripts & Binaries)"
+echo "    2) Native Tweak (Contains Settings/Preferences Only)"
+echo "    3) Utility Tweak (100% Application - Optional /var access)"
+echo "    4) System Tweak (Contains *app, Substrate Hooks, or /usr accessor)"
 echo "    5) Custom Tweak"
 read -p "    👉 Select Tweak Type [1-5]: " type_choice
 
 # Clean previous build workspaces safely
 rm -rf Package
 mkdir -p Package/DEBIAN
-mkdir -p Package/Library/MobileSubstrate/DynamicLibraries
 
 case $type_choice in
-    1) tweak_type="Native Tweak" ;;
-    2) tweak_type="Native Tweak (Prefs)" ;;
+    1) 
+        tweak_type="Native Tweak (100% Pack)" 
+        ;;
+    2) 
+        tweak_type="Native Tweak (Prefs)" 
+        ;;
     3)
         tweak_type="Utility Tweak"
-        read -p "    ❓ Does this utility contain an App [y/n]? " has_app
+        read -p "    ❓ Does this utility contain an App bundle [y/n]? " has_app
         if [[ "$has_app" != "y" && "$has_app" != "n" && "$has_app" != "Y" && "$has_app" != "N" ]]; then
             echo "❌ Wrong Answer: Expected y/n. [Unsupported]"
             exit 1
@@ -100,7 +103,7 @@ case $type_choice in
         ;;
     4)
         tweak_type="System Tweak"
-        read -p "    ❓ Does this system environment contain an App [y/n]? " has_app
+        read -p "    ❓ Does this system environment contain an App bundle [y/n]? " has_app
         if [[ "$has_app" != "y" && "$has_app" != "n" && "$has_app" != "Y" && "$has_app" != "N" ]]; then
             echo "❌ Wrong Answer: Expected y/n. [Unsupported]"
             exit 1
@@ -260,197 +263,22 @@ else
     exit 1
 fi
 
-read -p "    ❓ Do you want to add postinst module [y/n]? " add_post
+read -p "    ❓ Do you want to add preinst module [y/n]? " add_post
 if [[ "$add_post" != "y" && "$add_post" != "n" && "$add_post" != "Y" && "$add_post" != "N" ]]; then
     echo "❌ Wrong Answer: Expecting boolean evaluation. [Unsupported]"
     exit 1
 fi
 
+# Setup preinst script if required
 if [[ "$add_post" == "y" || "$add_post" == "Y" ]]; then
     read -p "    👉 Enter product module device identifier (e.g., iPhone8,1): " prod_module
     if [[ -z "$prod_module" ]]; then echo "❌ Error: Code blank! [Invalid]"; exit 1; fi
-    echo "#!/bin/sh" > Package/DEBIAN/postinst
-    echo "echo 'Configuring module for $prod_module...'" >> Package/DEBIAN/postinst
-fi
-
-echo "    [-] Choose Pre-inst Type:"
-echo "        A) System Reboot"
-echo "        B) Respring Only"
-read -p "    👉 Selection [A/B]: " pre_type
-
-if [[ "$pre_type" != "A" && "$pre_type" != "B" && "$pre_type" != "a" && "$pre_type" != "b" ]]; then
-    echo "❌ Wrong Answer: Invalid operations command token. [Unsupported]"
-    exit 1
-fi
-
-echo "#!/bin/sh" > Package/DEBIAN/preinst
-if [[ "$pre_type" == "A" || "$pre_type" == "a" ]]; then
-    echo "echo 'System reboot scheduled by installation profile...'" >> Package/DEBIAN/preinst
-else
-    echo "echo 'Respring engine triggering...'" >> Package/DEBIAN/preinst
-fi
-
-chmod 755 Package/DEBIAN/preinst
-if [ -f Package/DEBIAN/postinst ]; then chmod 755 Package/DEBIAN/postinst; fi
-echo ""
-
-# ------------------------------------------------------------------------------
-# STEP 6: HARDWARE ARCHITECTURE & AUTOMATED SUBSTRATE FILTER SETUP
-# ------------------------------------------------------------------------------
-echo "[-] STEP 6: Target Hardware Layer"
-echo "    1) 32-bit Architecture"
-echo "    2) 64-bit Architecture"
-read -p "    👉 Selection [1-2]: " arch_choice
-
-if [ "$arch_choice" == "1" ]; then
-    arch_tag="iphoneos-arm"
-elif [ "$arch_choice" == "2" ]; then
-    arch_tag="iphoneos-arm64"
-else
-    echo "❌ Wrong Answer: Target layout profile completely [Unsupported]."
-    exit 1
-fi
-
-# SMART FILTER DETECTION PAYLOAD
-if [[ "$type_choice" == "1" ]]; then
-    FILTER_BUNDLE="com.apple.UIKit"
-elif [[ "$type_choice" == "2" || "$pref_style" == "2" ]]; then
-    FILTER_BUNDLE="com.apple.Preferences"
-else
-    FILTER_BUNDLE="com.apple.springboard"
-fi
-
-cat <<EOF > "Package/Library/MobileSubstrate/DynamicLibraries/${proj_name}.plist"
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Filter</key>
-    <dict>
-        <key>Bundles</key>
-        <array>
-            <string>${FILTER_BUNDLE}</string>
-        </array>
-    </dict>
-</dict>
-</plist>
+    
+    cat << 'EOF' > Package/DEBIAN/preinst
+#!/bin/sh
+MODEL=$(sysctl -n hw.machine)
 EOF
+    echo "TARGET_MODEL=\"$prod_module\"" >> Package/DEBIAN/preinst
+    cat << 'EOF' >> Package/DEBIAN/preinst
 
-echo "NOTICE: Deployment requires copying your compiled target executable '.dylib' file directly here." > "Package/Library/MobileSubstrate/DynamicLibraries/COPY_DYLIB_HERE.txt"
-echo ""
-
-# ------------------------------------------------------------------------------
-# STEP 7: TOOLCHAIN SDK SELECTOR
-# ------------------------------------------------------------------------------
-echo "[-] STEP 7: Toolchain SDK Linker mapping"
-if [ -d "./sdk" ] && [ "$(ls -A ./sdk)" ]; then
-    echo "    Available iOS SDK bundles discovered inside /sdk/:"
-    select sdk_folder in $(ls ./sdk); do
-        if [ -n "$sdk_folder" ]; then
-            SDK_PATH="./sdk/$sdk_folder"
-            echo "    ✅ Selected Toolchain SDK: $SDK_PATH"
-            break
-        else
-            echo "❌ Wrong Answer: Index item matching lookup failed! [Invalid]"
-            exit 1
-        fi
-    done
-else
-    echo "    ⚠️ Warning: No local /sdk/ repository directory discovered. Creating default folder."
-    mkdir -p ./sdk
-    SDK_PATH="./sdk/iPhoneOS9.3.sdk"
-fi
-echo ""
-
-# ------------------------------------------------------------------------------
-# STEP 8: AUTOMATIC CONTROL GENERATOR (Auto AI Engine)
-# ------------------------------------------------------------------------------
-cat <<EOF > Package/DEBIAN/control
-Package: $pkg_id
-Name: $proj_name
-Version: $version
-Architecture: $arch_tag
-Description: Architecture-optimized $tweak_type built by TweakBuilder.
-Section: Tweaks
-Depends: $dependencies
-Author: Git Repo's Developper
-EOF
-
-# ------------------------------------------------------------------------------
-# STEP 9: AUTOMATIC MAKEFILE GENERATOR (Standard Stage Mapping)
-# ------------------------------------------------------------------------------
-echo "[-] STEP 9: Generating Automation Makefile..."
-
-TWEAK_NAME="${proj_name}"
-
-cat <<EOF > Makefile
-# ==============================================================================
-# AUTOMATIC MAKEFILE - Generated by TweakBuilder (RetroHackLab)
-# Project: $proj_name | Package ID: $pkg_id
-# ==============================================================================
-
-ARCHS = $arch_tag
-VERSION = $version
-SDKPATH = $SDK_PATH
-
-all: clean compile internal-stage package
-
-compile:
-	@echo "⚙️ [Clangy] Compiling iOS source layers..."
-	@chmod +x Clangy.sh
-	@./Clangy.sh
-
-internal-stage::
-	@echo "🔒 [Internal-Stage] Setting up production directory layout & permissions..."
-	@find Package -type d -exec chmod 755 {} \;
-	@find Package -type f -not -path "Package/DEBIAN/*" -exec chmod 644 {} \;
-	@if [ -f "Package/DEBIAN/preinst" ]; then chmod 755 Package/DEBIAN/preinst; fi
-	@if [ -f "Package/DEBIAN/postinst" ]; then chmod 755 Package/DEBIAN/postinst; fi
-	@
-	@echo "📂 [Mapping] Simulating root filesystem mapping layout for the DEB engine..."
-	@mkdir -p .theos/_/
-	@cp -r Package/* /
-
-package:
-	@echo "📦 [Debian] Invoking Gzip packaging core..."
-	@chmod +x DEBIAN.sh
-	@./DEBIAN.sh
-
-clean:
-	@echo "🧹 [Clean] Purging target architectures and build artifacts..."
-	@rm -f *.deb
-	@rm -rf .theos/_/
-	@rm -f Package/Library/MobileSubstrate/DynamicLibraries/*.dylib
-	@if [ -d "Package/Library/PreferenceBundles/\$(TWEAK_NAME).bundle" ]; then \\
-		rm -f "Package/Library/PreferenceBundles/\$(TWEAK_NAME).bundle/\$(TWEAK_NAME)"; \\
-	fi
-
-.PHONY: all compile internal-stage package clean
-EOF
-echo " -> [✓] Makefile standalone avec section 'internal-stage::' généré."
-echo ""
-
-# ------------------------------------------------------------------------------
-# BUILD PIPELINE RESULTS INDEX
-# ------------------------------------------------------------------------------
-echo "=================================================================="
-echo "🎉 DEPLOYMENT WORKSPACE DESIGNED & VERIFIED"
-echo "=================================================================="
-echo "📦 Package ID  : $pkg_id"
-echo "🚀 Target Name : $proj_name ($version)"
-echo "⚙️ Architecture: $arch_tag"
-echo "🎯 Injection Filter Target: $FILTER_BUNDLE"
-echo "📁 Structure Manifest Status:"
-echo "------------------------------------------------------------------"
-echo " -> [✓] Package/DEBIAN/control generated."
-echo " -> [✓] MobileSubstrate filter mapping file written successfully."
-echo " -> [✓] Automation Makefile created successfully (internal-stage mapping ready)."
-if [ -d "$BUNDLE_DIR" ]; then 
-    echo " -> [✓] Bundle created at: $BUNDLE_DIR"
-    echo " -> [⚠️] NOTICE: Remember to replace placeholder '$proj_name' file with actual binary!"
-fi
-if [ -f "$LOADER_DIR/${proj_name}.plist" ]; then 
-    echo " -> [✓] PreferenceLoader mapping implemented (.plist file initialized)."
-fi
-echo "=================================================================="
-echo "Workspace parameters generated. Ready for 'make' execution command pipeline."
+if
