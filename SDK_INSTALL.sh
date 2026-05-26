@@ -1,6 +1,7 @@
 #!/bin/bash
 sudo apt update && sudo apt install git -y
 git clone https://github.com/theos/sdks
+rm -rf sdk
 mv sdks sdk
 chmod -R 755 sdk
 mkdir include
