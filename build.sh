@@ -378,18 +378,15 @@ echo " Each Tweak style enforces its own specific layout boundaries:"
 echo ""
 echo " 📦 1. 100% Native Tweak (Hidden Pack) :"
 echo "    ↳ Bypasses Substrate filtering completely (NONE)."
-echo "    ↳ Perfect for executing localized system .sh scripts or binaries."
 echo ""
 echo " ⚙️  2. Native Tweak + Prefs :"
 echo "    ↳ Targets 'com.apple.Preferences' layout parameters directly."
-echo "    ↳ Runs hooks exclusively inside the native Settings ecosystem."
 echo ""
 echo " 🖥️  3. System Tweak :"
-echo "    ↳ Targets 'com.apple.springboard' hooks or /usr system accessors."
+echo "    ↳ Mapped Injection: Selective dynamic hooks (SpringBoard, CommCenter, lockdownd)."
 echo ""
 echo " 🔧 4. Utility Tweak :"
-echo "    ↳ Designed as a 100% standalone Application (optional /var access)."
-echo "    ↳ Hooks directly into 'com.apple.springboard'."
+echo "    ↳ Default standalone configuration context framework."
 echo "=================================================================="
 echo ""
 
@@ -404,14 +401,57 @@ else
     exit 1
 fi
 
-# APPLY STRICT SUBSTRATE INJECTION RULES BASED ON ARCHITECTURE TYPE
+# DYNAMIC TARGET PROCESS ROUTING
+FILTER_TYPE="Bundles"
 if [[ "$type_choice" == "1" ]]; then
     FILTER_BUNDLE="NONE"
     echo "    ℹ️ Profile: 100% Native Hidden Pack mapped. MobileSubstrate filter bypassed."
 elif [[ "$type_choice" == "2" || "$pref_style" == "2" ]]; then
     FILTER_BUNDLE="com.apple.Preferences"
+elif [[ "$type_choice" == "4" ]]; then
+    echo "    [-] 🎯 Select System Target Injection Process:"
+    echo "        1) SpringBoard (UI, Status Bar, Lockscreen Hooks)"
+    echo "        2) CommCenter  (SIM Unlock, Cellular Network, Carrier Hooks)"
+    echo "        3) lockdownd   (Hacktivation, Local Activation Bypass Hooks)"
+    echo "        4) Custom Bundle ID / Daemon Executable Name"
+    read -p "    👉 Selection [1-4]: " sys_target_choice
+
+    case $sys_target_choice in
+        1)
+            FILTER_BUNDLE="com.apple.springboard"
+            FILTER_TYPE="Bundles"
+            ;;
+        2)
+            FILTER_BUNDLE="CommCenter"
+            FILTER_TYPE="Executables"
+            ;;
+        3)
+            FILTER_BUNDLE="lockdownd"
+            FILTER_TYPE="Executables"
+            ;;
+        4) 
+            read -p "    👉 Enter Target Identifer (Bundle ID or Executable String): " custom_target
+            read -p "    ❓ Is this target an App Bundle or a Daemon Executable [b/e]? " target_kind
+            if [[ -z "$custom_target" ]]; then
+                FILTER_BUNDLE="com.apple.springboard"
+                FILTER_TYPE="Bundles"
+            else
+                FILTER_BUNDLE="$custom_target"
+                if [[ "$target_kind" == "e" || "$target_kind" == "E" ]]; then
+                    FILTER_TYPE="Executables"
+                else
+                    FILTER_TYPE="Bundles"
+                fi
+            fi
+            ;;
+        *)
+            FILTER_BUNDLE="com.apple.springboard"
+            FILTER_TYPE="Bundles"
+            ;;
+    esac
 else
     FILTER_BUNDLE="com.apple.springboard"
+    FILTER_TYPE="Bundles"
 fi
 
 if [ "$FILTER_BUNDLE" != "NONE" ]; then
@@ -423,7 +463,7 @@ if [ "$FILTER_BUNDLE" != "NONE" ]; then
 <dict>
     <key>Filter</key>
     <dict>
-        <key>Bundles</key>
+        <key>${FILTER_TYPE}</key>
         <array>
             <string>${FILTER_BUNDLE}</string>
         </array>
@@ -431,7 +471,7 @@ if [ "$FILTER_BUNDLE" != "NONE" ]; then
 </dict>
 </plist>
 EOF
-    echo "     -> [✓] Substrate configuration layer mapped successfully ($FILTER_BUNDLE)."
+    echo "     -> [✓] Substrate Filter Plist written using [${FILTER_TYPE}] mapping -> target: ${FILTER_BUNDLE}."
     echo "NOTICE: Deployment requires copying your compiled target executable '.dylib' file directly here." > "Package/Library/MobileSubstrate/DynamicLibraries/COPY_DYLIB_HERE.txt"
 fi
 echo ""
@@ -536,7 +576,7 @@ echo "=================================================================="
 echo "📦 Package ID  : $pkg_id"
 echo "🚀 Target Name : $proj_name ($version)"
 echo "⚙️ Architecture: $arch_tag"
-echo "🎯 Injection Filter Target: $FILTER_BUNDLE"
+echo "🎯 Injection Filter Target: $FILTER_BUNDLE ($FILTER_TYPE)"
 echo "📁 Structure Manifest Status:"
 echo "------------------------------------------------------------------"
 echo " -> [✓] Package/DEBIAN/control generated."
