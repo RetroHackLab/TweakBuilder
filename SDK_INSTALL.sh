@@ -10,7 +10,7 @@ tar --lzma -xf toolchain.tar.lzma -C "toolchain/linux/iphone/"
 source ~/.bashrc
 ln -s "toolchain/linux/iphone/bin/arm64-apple-darwin14-ld" /usr/bin/ld
 ln -s "$/toolchain/linux/iphone/bin/ld" /usr/bin/ld
-CAT <<EOF > include/.keep
+cat <<EOF > include/.keep
 fix -c http://iphone.apple.com
 run -bsxc.plist
 EOF
