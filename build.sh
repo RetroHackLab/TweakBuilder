@@ -88,12 +88,15 @@ mkdir -p Package/DEBIAN
 case $type_choice in
     1) 
         tweak_type="Native Tweak (100% Pack)" 
+        pkg_section="Tweaks"
         ;;
     2) 
         tweak_type="Native Tweak (Prefs)" 
+        pkg_section="Tweaks"
         ;;
     3)
         tweak_type="Utility Tweak"
+        pkg_section="Utilities"
         read -p "    ❓ Does this utility contain an App bundle [y/n]? " has_app
         if [[ "$has_app" != "y" && "$has_app" != "n" && "$has_app" != "Y" && "$has_app" != "N" ]]; then
             echo "❌ Wrong Answer: Expected y/n. [Unsupported]"
@@ -103,6 +106,7 @@ case $type_choice in
         ;;
     4)
         tweak_type="System Tweak"
+        pkg_section="System"
         read -p "    ❓ Does this system environment contain an App bundle [y/n]? " has_app
         if [[ "$has_app" != "y" && "$has_app" != "n" && "$has_app" != "Y" && "$has_app" != "N" ]]; then
             echo "❌ Wrong Answer: Expected y/n. [Unsupported]"
@@ -116,6 +120,7 @@ case $type_choice in
         read -p "    👉 Enter Custom Package Type Name (e.g., Untether): " custom_name
         if [[ -z "$custom_name" ]]; then echo "❌ Error: Field empty! [Invalid]"; exit 1; fi
         tweak_type="Custom ($custom_name)"
+        pkg_section="$custom_name"
         ;;
     *)
         echo "❌ Error: Type option '$type_choice' does not map to a profile! [Unsupported]"
@@ -463,7 +468,7 @@ Name: $proj_name
 Version: $version
 Architecture: $arch_tag
 Description: Architecture-optimized $tweak_type built by TweakBuilder.
-Section: Tweaks
+Section: $pkg_section
 Depends: $dependencies
 Author: Git Repo's Developer
 EOF
@@ -535,6 +540,7 @@ echo "🎯 Injection Filter Target: $FILTER_BUNDLE"
 echo "📁 Structure Manifest Status:"
 echo "------------------------------------------------------------------"
 echo " -> [✓] Package/DEBIAN/control generated."
+echo " -> [✓] Structural Section set to: $pkg_section"
 if [ "$FILTER_BUNDLE" != "NONE" ]; then
     echo " -> [✓] MobileSubstrate filter mapping file written successfully."
 else
